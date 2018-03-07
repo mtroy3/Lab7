@@ -53,17 +53,22 @@ public class MorseDecoder {
 
         double[] sampleBuffer = new double[BIN_SIZE * inputFile.getNumChannels()];
         for (int binIndex = 0; binIndex < totalBinCount; binIndex++) {
+            double[] sum = new double[totalBinCount];
             // Get the right number of samples from the inputFile
             // Sum all the samples together and store them in the returnBuffer
+            for (int i = 0; i < totalBinCount; i++) {
+                sum[i] = inputFile.readFrames(sampleBuffer, BIN_SIZE);
+            }
+            returnBuffer[binIndex] = sum[binIndex];
         }
         return returnBuffer;
     }
 
     /** Power threshold for power or no power. You may need to modify this value. */
-    private static final double POWER_THRESHOLD = 10;
+    private static final double POWER_THRESHOLD = 3;
 
     /** Bin threshold for dots or dashes. Related to BIN_SIZE. You may need to modify this value. */
-    private static final int DASH_BIN_COUNT = 8;
+    private static final int DASH_BIN_COUNT = 2;
 
     /**
      * Convert power measurements to dots, dashes, and spaces.
@@ -81,13 +86,27 @@ public class MorseDecoder {
          * There are four conditions to handle. Symbols should only be output when you see
          * transitions. You will also have to store how much power or silence you have seen.
          */
-
+        String morseLine = "";
+        boolean isPower = false;
+        int count = 0;
         // if ispower and waspower
         // else if ispower and not waspower
         // else if issilence and wassilence
         // else if issilence and not wassilence
-
-        return "";
+        for (int i = 1; i < powerMeasurements.length; i++) {
+            if (powerMeasurements[i] >= POWER_THRESHOLD && powerMeasurements[i - 1] >= POWER_THRESHOLD) {
+                isPower = true;
+                count++;
+                if (isPower && count >= DASH_BIN_COUNT) {
+                    morseLine += "-";
+                } else if (isPower && count < DASH_BIN_COUNT) {
+                    morseLine += ".";
+                }
+            } else if (powerMeasurements[i] >= POWER_THRESHOLD && powerMeasurements[i - 1] <= POWER_THRESHOLD) {
+                morseLine += " ";
+            }
+        }
+        return morseLine;
     }
 
     /**
